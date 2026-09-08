@@ -11,6 +11,8 @@ import (
 
 const serverURL = "http://127.0.0.1:3003"
 
+var sum int = 0
+
 func TestConcurrentLockUnlock(t *testing.T) {
 	var wg sync.WaitGroup
 
@@ -33,7 +35,10 @@ func TestConcurrentLockUnlock(t *testing.T) {
 
 			// Step 2: Hold the lock for 3 seconds
 			fmt.Printf("[%s] [goroutine %d] Sleeping for 3 seconds while holding lock on resource %s\n", time.Now().Format(time.RFC3339), id, resource)
-			time.Sleep(3 * time.Second)
+			//time.Sleep(3 * time.Second)
+
+			// Increment the sum.
+			sum++
 
 			// Step 3: Release lock
 			unlockResp, err := http.Get(fmt.Sprintf("%s/unlock/%s", serverURL, resource))
@@ -49,4 +54,8 @@ func TestConcurrentLockUnlock(t *testing.T) {
 
 	wg.Wait()
 	fmt.Printf("[%s] All goroutines finished.\n", time.Now().Format(time.RFC3339))
+
+	if sum != 10 {
+		t.Errorf("expected sum to be 10, got %d", sum)
+	}
 }
