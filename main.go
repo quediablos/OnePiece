@@ -1,62 +1,69 @@
 package main
 
 import (
+	"OnePiece/core"
 	"fmt"
+	"log"
 	"net"
-	"time"
+	"runtime"
+
+	"OnePiece/connection"
 )
 
-// Global map to hold active connections by ID
-var clients = make(map[string]net.Conn)
-
-func handleClient(conn net.Conn) {
-	clientID := "client-1" // Use a unique ID or address in real apps
-	clients[clientID] = conn
-
-	fmt.Println("Connected to client:", conn.RemoteAddr())
-
-	// Wait in a goroutine or let the main/other logic handle the delay
-	go delayedResponse(clientID)
-}
-
-func delayedResponse(clientID string) {
-	// Hold the connection for 5 seconds
-	time.Sleep(5 * time.Second)
-
-	conn, exists := clients[clientID]
-	if !exists {
-		fmt.Println("Client not found")
-		return
-	}
-
-	// Send the response later
-	_, err := conn.Write([]byte("Hello from the server after a delay!\n"))
-	if err != nil {
-		fmt.Println("Error writing:", err)
-	}
-
-	// Close the connection after responding
-	conn.Close()
-	delete(clients, clientID)
-}
-
 func main() {
-	listener, err := net.Listen("tcp", ":8080")
+
+	//Start the app data.
+	app := NewApp()
+	_ = app
+
+	runtime.GOMAXPROCS(1)
+
+	// 2. Bind to a port and listen for TCP traffic
+	listener, err := net.Listen("tcp", "127.0.0.1:3003")
 	if err != nil {
-		fmt.Println("Error listening:", err)
-		return
+		log.Fatalf("Failed to bind to port: %v", err)
 	}
 	defer listener.Close()
-
-	fmt.Println("Server listening on :8080")
+	fmt.Println("Single-threaded server running on http://127.0.0.1:3003...")
 
 	for {
+
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error accepting:", err)
+			log.Printf("Failed to accept connection: %v", err)
 			continue
 		}
 
-		go handleClient(conn)
+		req, err := connection.ReadHTTPRequest(conn)
+		if err != nil {
+			log.Printf("Failed to parse request: %v", err)
+			conn.Close()
+			continue
+		}
+
+		fmt.Printf("Processing a request — Method: %s, Path: %s, Query: %s\n", req.Method, req.Path, req.Query)
+		fmt.Printf("Body: %s\n", string(req.Body))
+
+		operation, resourceId, err := req.ParseURL()
+
+		if operation == core.Lock {
+
+			lock := core.CheckForLock(resourceId, app.Locks)
+
+			if lock != nil {
+
+				fmt.Printf("Lock found for resourceId: %s\n", resourceId)
+			}
+		}
+
+		response := "HTTP/1.1 200 OK\r\n" +
+			"Content-Type: text/plain\r\n" +
+			"Content-Length: 13\r\n" +
+			"\r\n" +
+			"Hello, World!"
+
+		conn.Write([]byte(response))
+		conn.Close()
+		fmt.Println("Finished processing request.")
 	}
 }
