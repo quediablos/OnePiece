@@ -1,62 +1,73 @@
 package main
 
 import (
+	"OnePiece/communication"
+	"OnePiece/core"
 	"fmt"
+	"log"
 	"net"
-	"time"
+	"runtime"
+
+	"OnePiece/connection"
 )
 
-// Global map to hold active connections by ID
-var clients = make(map[string]net.Conn)
-
-func handleClient(conn net.Conn) {
-	clientID := "client-1" // Use a unique ID or address in real apps
-	clients[clientID] = conn
-
-	fmt.Println("Connected to client:", conn.RemoteAddr())
-
-	// Wait in a goroutine or let the main/other logic handle the delay
-	go delayedResponse(clientID)
-}
-
-func delayedResponse(clientID string) {
-	// Hold the connection for 5 seconds
-	time.Sleep(5 * time.Second)
-
-	conn, exists := clients[clientID]
-	if !exists {
-		fmt.Println("Client not found")
-		return
-	}
-
-	// Send the response later
-	_, err := conn.Write([]byte("Hello from the server after a delay!\n"))
-	if err != nil {
-		fmt.Println("Error writing:", err)
-	}
-
-	// Close the connection after responding
-	conn.Close()
-	delete(clients, clientID)
-}
-
 func main() {
-	listener, err := net.Listen("tcp", ":8080")
+
+	//Start the app data.
+	app := NewApp()
+
+	runtime.GOMAXPROCS(1)
+
+	// 2. Bind to a port and listen for TCP traffic
+	listener, err := net.Listen("tcp", "127.0.0.1:3003")
 	if err != nil {
-		fmt.Println("Error listening:", err)
-		return
+		log.Fatalf("Failed to bind to port: %v", err)
 	}
 	defer listener.Close()
-
-	fmt.Println("Server listening on :8080")
+	fmt.Println("Single-threaded server running on http://127.0.0.1:3003...")
 
 	for {
+
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error accepting:", err)
+			log.Printf("Failed to accept connection: %v", err)
 			continue
 		}
 
-		go handleClient(conn)
+		req, err := connection.ReadHTTPRequest(conn)
+		if err != nil {
+			log.Printf("Failed to parse request: %v", err)
+			conn.Close()
+			continue
+		}
+
+		operation, resourceId, err := req.ParseURL()
+		handleOperation(operation, resourceId, conn, app)
 	}
+}
+
+func handleOperation(operation core.Operation, resourceId string, conn net.Conn, app *App) {
+	if operation == core.Lock {
+
+		lock := core.CheckForLock(resourceId, app.Locks)
+
+		if lock != nil {
+			//Another client already locked the resource, hold this client until the lock is released.
+			core.RequestLock(conn, resourceId, app.LockRequests)
+		} else {
+
+			//No lock is acquired for the resource id yet, acquire the lock, and finish the connectin.
+			core.AcquireLock(resourceId, app.Locks)
+			connection.ReleaseClientHttp(conn, communication.GenerateAcquireLockResponse(resourceId))
+		}
+	} else if operation == core.Unlock {
+
+		waitingOne := core.ReleaseLock(resourceId, app.Locks, app.LockRequests)
+
+		if waitingOne != nil {
+			connection.ReleaseClientHttp(waitingOne, communication.GenerateAcquireLockResponse(resourceId))
+		}
+		connection.ReleaseClientHttp(conn, communication.GenerateReleaseLockResponse(resourceId))
+	}
+
 }
