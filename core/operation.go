@@ -4,5 +4,6 @@ package core
 type Operation string
 
 const (
-	Lock Operation = "lock"
+	Lock   Operation = "lock"
+	Unlock Operation = "unlock"
 )
