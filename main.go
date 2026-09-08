@@ -1,6 +1,7 @@
 package main
 
 import (
+	"OnePiece/communication"
 	"OnePiece/core"
 	"fmt"
 	"log"
@@ -14,7 +15,6 @@ func main() {
 
 	//Start the app data.
 	app := NewApp()
-	_ = app
 
 	runtime.GOMAXPROCS(1)
 
@@ -41,51 +41,33 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("Processing a request — Method: %s, Path: %s, Query: %s\n", req.Method, req.Path, req.Query)
-		fmt.Printf("Body: %s\n", string(req.Body))
-
 		operation, resourceId, err := req.ParseURL()
-
-		if operation == core.Lock {
-
-			lock := core.CheckForLock(resourceId, app.Locks)
-
-			if lock != nil {
-				//Another client already locked the resource, hold this client until the lock is released.
-				fmt.Printf("Lock found for resourceId: %s\n", resourceId)
-				core.RequestLock(conn, resourceId, app.LockRequests)
-			} else {
-
-				//No lock is acquired for the resource id yet, acquire the lock, and finish the connectin.
-				fmt.Printf("Lock not found for resourceId: %s\n", resourceId)
-				core.AcquireLock(resourceId, app.Locks)
-
-				response := "HTTP/1.1 200 OK\r\n" +
-					"Content-Type: text/plain\r\n" +
-					"Content-Length: 50\r\n" +
-					"\r\n" +
-					"Acquired lock for resourceId: " + resourceId
-				connection.WriteResponseHttp(conn, response)
-			}
-		} else if operation == core.Unlock {
-
-			waitingOne := core.ReleaseLock(resourceId, app.Locks, app.LockRequests)
-
-			if waitingOne != nil {
-				responseWaitingOne := "HTTP/1.1 200 OK\r\n" +
-					"Content-Type: text/plain\r\n" +
-					"Content-Length: 50\r\n" +
-					"\r\n" +
-					"Acquired lock for resourceId: " + resourceId
-				connection.WriteResponseHttp(waitingOne, responseWaitingOne)
-			}
-
-			response := "HTTP/1.1 200 OK\r\n" +
-				"Content-Type: text/plain\r\n" +
-				"Content-Length: 50\r\n" +
-				"\r\n" +
-				"Released lock for resourceId: " + resourceId
-			connection.WriteResponseHttp(conn, response)
-		}
+		handleOperation(operation, resourceId, conn, app)
 	}
+}
+
+func handleOperation(operation core.Operation, resourceId string, conn net.Conn, app *App) {
+	if operation == core.Lock {
+
+		lock := core.CheckForLock(resourceId, app.Locks)
+
+		if lock != nil {
+			//Another client already locked the resource, hold this client until the lock is released.
+			core.RequestLock(conn, resourceId, app.LockRequests)
+		} else {
+
+			//No lock is acquired for the resource id yet, acquire the lock, and finish the connectin.
+			core.AcquireLock(resourceId, app.Locks)
+			connection.ReleaseClientHttp(conn, communication.GenerateAcquireLockResponse(resourceId))
+		}
+	} else if operation == core.Unlock {
+
+		waitingOne := core.ReleaseLock(resourceId, app.Locks, app.LockRequests)
+
+		if waitingOne != nil {
+			connection.ReleaseClientHttp(waitingOne, communication.GenerateAcquireLockResponse(resourceId))
+		}
+		connection.ReleaseClientHttp(conn, communication.GenerateReleaseLockResponse(resourceId))
+	}
+
 }

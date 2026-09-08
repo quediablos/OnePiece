@@ -60,3 +60,10 @@ func (r *ParsedRequest) ParseURL() (core.Operation, string, error) {
 
 	return op, segments[1], nil
 }
+
+// ReleaseClientHttp Writes a response to the client and releases its hold.
+func ReleaseClientHttp(conn net.Conn, response string) {
+
+	conn.Write([]byte(response))
+	conn.Close()
+}

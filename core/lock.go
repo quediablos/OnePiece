@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// LockInfo Operations in core level handle the data level only.
 type LockInfo struct {
 	ResourceId string
 	IsLocked   bool
