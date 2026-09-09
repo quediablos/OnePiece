@@ -10,6 +10,7 @@ type LockInfo struct {
 	ResourceId string
 	IsLocked   bool
 	LockedAt   *time.Time
+	Expired    bool
 }
 
 type LockRequest struct {
@@ -18,13 +19,21 @@ type LockRequest struct {
 	RequestedAt *time.Time
 }
 
-func CheckForLock(resourceId string, Locks map[string]LockInfo) *LockInfo {
+// CheckForLock Checks if the resourceId is validly under lock. If the locking client has not locked before the TTL
+func CheckForLock(resourceId string, locks map[string]LockInfo) *LockInfo {
 
-	if lock, ok := Locks[resourceId]; ok {
+	if lock, ok := locks[resourceId]; ok {
+
+		//Check for expiration. If the previous lock expired, delete it from the locks.
+		if lock.LockedAt != nil && time.Since(*lock.LockedAt) > 10*time.Second {
+			lock.Expired = true
+			delete(locks, resourceId)
+		}
+
 		return &lock
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 func AcquireLock(resourceId string, Locks map[string]LockInfo) {

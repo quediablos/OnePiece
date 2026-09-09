@@ -1,14 +1,14 @@
 package main
 
 import (
-	"OnePiece/communication"
 	"OnePiece/core"
+	"OnePiece/message"
 	"fmt"
 	"log"
 	"net"
 	"runtime"
 
-	"OnePiece/connection"
+	"OnePiece/network"
 )
 
 func main() {
@@ -30,11 +30,11 @@ func main() {
 
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Printf("Failed to accept connection: %v", err)
+			log.Printf("Failed to accept network: %v", err)
 			continue
 		}
 
-		req, err := connection.ReadHTTPRequest(conn)
+		req, err := network.ReadHTTPRequest(conn)
 		if err != nil {
 			log.Printf("Failed to parse request: %v", err)
 			conn.Close()
@@ -51,23 +51,23 @@ func handleOperation(operation core.Operation, resourceId string, conn net.Conn,
 
 		lock := core.CheckForLock(resourceId, app.Locks)
 
-		if lock != nil {
+		if lock != nil && !lock.Expired {
 			//Another client already locked the resource, hold this client until the lock is released.
 			core.RequestLock(conn, resourceId, app.LockRequests)
 		} else {
 
 			//No lock is acquired for the resource id yet, acquire the lock, and finish the connectin.
 			core.AcquireLock(resourceId, app.Locks)
-			connection.ReleaseClientHttp(conn, communication.GenerateAcquireLockResponse(resourceId))
+			network.ReleaseClientHttp(conn, message.GenerateAcquireLockResponse(resourceId))
 		}
 	} else if operation == core.Unlock {
 
 		waitingOne := core.ReleaseLock(resourceId, app.Locks, app.LockRequests)
 
 		if waitingOne != nil {
-			connection.ReleaseClientHttp(waitingOne, communication.GenerateAcquireLockResponse(resourceId))
+			network.ReleaseClientHttp(waitingOne, message.GenerateAcquireLockResponse(resourceId))
 		}
-		connection.ReleaseClientHttp(conn, communication.GenerateReleaseLockResponse(resourceId))
+		network.ReleaseClientHttp(conn, message.GenerateReleaseLockResponse(resourceId))
 	}
 
 }
