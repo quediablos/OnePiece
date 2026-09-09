@@ -25,7 +25,7 @@ func CheckForLock(resourceId string, locks map[string]LockInfo) *LockInfo {
 	if lock, ok := locks[resourceId]; ok {
 
 		//Check for expiration. If the previous lock expired, delete it from the locks.
-		if lock.LockedAt != nil && time.Since(*lock.LockedAt) > 10*time.Second {
+		if lock.LockedAt != nil && time.Since(*lock.LockedAt) > lockExpirationTtl {
 			lock.Expired = true
 			delete(locks, resourceId)
 		}
@@ -36,40 +36,66 @@ func CheckForLock(resourceId string, locks map[string]LockInfo) *LockInfo {
 	return nil
 }
 
-func AcquireLock(resourceId string, Locks map[string]LockInfo) {
+// AcquireLock
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func AcquireLock(resourceId string, app *App) {
 
 	now := time.Now()
-	Locks[resourceId] = LockInfo{
+	app.Locks[resourceId] = LockInfo{
 		ResourceId: resourceId,
 		IsLocked:   true,
 		LockedAt:   &now,
 	}
 }
 
-func RequestLock(Conn net.Conn, resourceId string, LockRequests map[string][]LockRequest) {
+// RequestLock
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func RequestLock(Conn net.Conn, resourceId string, app *App) {
 
-	if LockRequests[resourceId] == nil {
-		LockRequests[resourceId] = []LockRequest{}
+	if app.LockRequests[resourceId] == nil {
+		app.LockRequests[resourceId] = []LockRequest{}
 	}
 
 	now := time.Now()
-	LockRequests[resourceId] = append(LockRequests[resourceId], LockRequest{
+	app.LockRequests[resourceId] = append(app.LockRequests[resourceId], LockRequest{
 		ResourceId:  resourceId,
 		RequestedBy: Conn,
 		RequestedAt: &now,
 	})
 }
 
-func ReleaseLock(resourceId string, Locks map[string]LockInfo, lockRequests map[string][]LockRequest) net.Conn {
+func ReleaseLock(resourceId string, app *App) net.Conn {
 
-	delete(Locks, resourceId)
+	delete(app.Locks, resourceId)
 
-	if queue, ok := lockRequests[resourceId]; ok && len(queue) > 0 {
+	if queue, ok := app.LockRequests[resourceId]; ok && len(queue) > 0 {
 		waitingClient := queue[0]
-		lockRequests[resourceId] = queue[1:]
-		AcquireLock(resourceId, Locks)
+		app.LockRequests[resourceId] = queue[1:]
+		AcquireLock(resourceId, app)
 
 		return waitingClient.RequestedBy
 	}
 	return nil
+}
+
+// CheckForExpiredLocks checks the locks map for any LockInfo whose LockedAt is
+// older than lockExpirationTtl and removes them.
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func CheckForExpiredLocks(app *App) ([]LockInfo, []LockRequest) {
+
+	var expiredLocks []LockInfo
+	var pendingRequests []LockRequest
+	for resourceId, lock := range app.Locks {
+		if lock.LockedAt != nil && time.Since(*lock.LockedAt) > lockExpirationTtl {
+			lock.Expired = true
+			expiredLocks = append(expiredLocks, lock)
+			delete(app.Locks, resourceId)
+
+			if queue, ok := app.LockRequests[resourceId]; ok && len(queue) > 0 {
+				pendingRequests = append(pendingRequests, queue[0])
+				app.LockRequests[resourceId] = queue[1:]
+			}
+		}
+	}
+	return expiredLocks, pendingRequests
 }
