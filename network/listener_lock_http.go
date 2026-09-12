@@ -15,7 +15,7 @@ func ListenHttp(app *core.App) {
 		log.Fatalf("Failed to bind to port: %v", err)
 	}
 	defer listener.Close()
-	fmt.Println("Single-threaded server running on http://127.0.0.1:3003...")
+	fmt.Println("Server running on http://127.0.0.1:3003...")
 
 	for {
 

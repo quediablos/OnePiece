@@ -12,11 +12,12 @@ func Maintain(app *core.App) {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		MaintainPendingLockRequests(app)
+		MaintainExpiredLocks(app)
 	}
 }
 
-func MaintainPendingLockRequests(app *core.App) {
+// MaintainExpiredLocks maintains expired locks, releases their lock and grants them to waiting clients.
+func MaintainExpiredLocks(app *core.App) {
 
 	app.MutexForLocks.Lock()
 	defer app.MutexForLocks.Unlock()
