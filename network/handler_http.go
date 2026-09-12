@@ -51,8 +51,10 @@ func (r *ParsedRequest) ParseURL() (core.Operation, string, error) {
 
 	op := core.Operation(segments[0])
 	switch op {
-	case core.Lock:
-	case core.Unlock:
+	case core.OpLock:
+	case core.OpUnlock:
+	case core.OpReserveStock:
+	case core.OpReleaseStock:
 		// valid
 	default:
 		return "", "", fmt.Errorf("unknown operation %q", segments[0])

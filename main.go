@@ -13,5 +13,5 @@ func main() {
 
 	go job.Maintain(app)
 
-	network.ListenHttp(app)
+	network.ListenForLocksHttp(app)
 }

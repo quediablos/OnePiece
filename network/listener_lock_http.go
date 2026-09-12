@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-func ListenHttp(app *core.App) {
+func ListenForLocksHttp(app *core.App) {
 
 	listener, err := net.Listen("tcp", "127.0.0.1:3003")
 	if err != nil {
@@ -42,7 +42,7 @@ func handleOperation(operation core.Operation, resourceId string, conn net.Conn,
 	app.MutexForLocks.Lock()
 	defer app.MutexForLocks.Unlock()
 
-	if operation == core.Lock {
+	if operation == core.OpLock {
 
 		lock := core.CheckForLock(resourceId, app.Locks)
 
@@ -55,7 +55,7 @@ func handleOperation(operation core.Operation, resourceId string, conn net.Conn,
 			core.AcquireLock(resourceId, app)
 			ReleaseClientHttp(conn, message.GenerateAcquireLockResponse(resourceId))
 		}
-	} else if operation == core.Unlock {
+	} else if operation == core.OpUnlock {
 
 		waitingOne := core.ReleaseLock(resourceId, app)
 

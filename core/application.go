@@ -10,10 +10,19 @@ const (
 )
 
 type App struct {
-	Locks         map[string]LockInfo      //Key is the resource id.
-	LockRequests  map[string][]LockRequest //Key is the resource id.
-	Cycle         int32                    //Counts each operation handled, in some cycles maintenance work is done.
-	MutexForLocks sync.RWMutex             //Guards Locks and LockRequests.
+	Cycle int32 //Counts each operation handled, in some cycles maintenance work is done.
+
+	//Locks
+	Locks        map[string]LockInfo      //Key is the resource id.
+	LockRequests map[string][]LockRequest //Key is the resource id.
+
+	//Stocks
+	StockCounts   map[string]int64          //Represents the stock count for each resource.
+	StockReserves map[string][]StockReserve //Stores the stock reserves for each stock.
+
+	//Thread-safe
+	MutexForLocks  sync.RWMutex //Guards Locks and LockRequests.
+	MutexForStocks sync.RWMutex
 }
 
 func NewApp() *App {

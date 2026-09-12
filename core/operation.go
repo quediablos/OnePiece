@@ -4,6 +4,8 @@ package core
 type Operation string
 
 const (
-	Lock   Operation = "lock"
-	Unlock Operation = "unlock"
+	OpLock         Operation = "lock"
+	OpUnlock       Operation = "unlock"
+	OpReserveStock Operation = "reserve_stock"
+	OpReleaseStock Operation = "release_stock"
 )
