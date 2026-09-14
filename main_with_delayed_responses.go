@@ -20,7 +20,7 @@ func handleClient(conn net.Conn) {
 }
 
 func delayedResponse(clientID string) {
-	// Hold the connection for 5 seconds
+	// Hold the network for 5 seconds
 	time.Sleep(5 * time.Second)
 
 	conn, exists := clients[clientID]
@@ -35,7 +35,7 @@ func delayedResponse(clientID string) {
 		fmt.Println("Error writing:", err)
 	}
 
-	// Close the connection after responding
+	// Close the network after responding
 	conn.Close()
 	delete(clients, clientID)
 }
