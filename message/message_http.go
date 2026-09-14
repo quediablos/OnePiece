@@ -62,3 +62,15 @@ func GenerateCreateStockResponse(resourceId string, quantity string) string {
 
 	return response
 }
+
+func GenerateGenericErrorResponse() string {
+	body := "Error"
+	response := "HTTP/1.1 204 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+
+}

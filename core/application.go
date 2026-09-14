@@ -21,8 +21,12 @@ type App struct {
 	StockReserves map[string][]StockReserve //Stores the stock reserves for each stock.
 
 	//Thread-safe
-	MutexForLocks  sync.RWMutex //Guards Locks and LockRequests.
+	MutexForLocks  sync.RWMutex
 	MutexForStocks sync.RWMutex
+
+	//Thread communication
+	ChanLocks  chan OperationData
+	ChanStocks chan OperationData
 }
 
 func NewApp() *App {
@@ -31,6 +35,8 @@ func NewApp() *App {
 		LockRequests:  make(map[string][]LockRequest),
 		StockCounts:   make(map[string]int64),
 		StockReserves: make(map[string][]StockReserve),
+		ChanLocks:     make(chan OperationData, 100),
+		ChanStocks:    make(chan OperationData, 100),
 	}
 }
 
