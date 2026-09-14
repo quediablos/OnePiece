@@ -27,8 +27,10 @@ type App struct {
 
 func NewApp() *App {
 	return &App{
-		Locks:        make(map[string]LockInfo),
-		LockRequests: make(map[string][]LockRequest),
+		Locks:         make(map[string]LockInfo),
+		LockRequests:  make(map[string][]LockRequest),
+		StockCounts:   make(map[string]int64),
+		StockReserves: make(map[string][]StockReserve),
 	}
 }
 

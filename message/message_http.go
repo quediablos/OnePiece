@@ -50,3 +50,15 @@ func GenerateReserveStockFailedResponse(resourceId string) string {
 
 	return response
 }
+
+func GenerateCreateStockResponse(resourceId string, quantity string) string {
+
+	body := "Created stock for resourceId: " + resourceId + " quantity:" + quantity
+	response := "HTTP/1.1 204 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}

@@ -32,12 +32,12 @@ func ListenForLocksHttp(app *core.App) {
 			continue
 		}
 
-		operation, resourceId, err := req.ParseURL()
-		handleOperation(operation, resourceId, conn, app)
+		operation, resourceId, _, err := req.ParseURL()
+		handleOperationLock(operation, resourceId, conn, app)
 	}
 }
 
-func handleOperation(operation core.Operation, resourceId string, conn net.Conn, app *core.App) {
+func handleOperationLock(operation core.Operation, resourceId string, conn net.Conn, app *core.App) {
 
 	app.MutexForLocks.Lock()
 	defer app.MutexForLocks.Unlock()

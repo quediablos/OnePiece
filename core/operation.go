@@ -8,4 +8,5 @@ const (
 	OpUnlock       Operation = "unlock"
 	OpReserveStock Operation = "reserve_stock"
 	OpReleaseStock Operation = "release_stock"
+	OpCreateStock  Operation = "create_stock"
 )

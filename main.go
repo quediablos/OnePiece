@@ -4,6 +4,7 @@ import (
 	"OnePiece/core"
 	"OnePiece/job"
 	"OnePiece/network"
+	"sync"
 )
 
 func main() {
@@ -13,5 +14,18 @@ func main() {
 
 	go job.Maintain(app)
 
-	network.ListenForLocksHttp(app)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		network.ListenForLocksHttp(app)
+	}()
+
+	go func() {
+		defer wg.Done()
+		network.ListenForStocksHttp(app)
+	}()
+
+	wg.Wait()
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 )
 
 func ListenForStocksHttp(app *core.App) {
@@ -32,12 +33,12 @@ func ListenForStocksHttp(app *core.App) {
 			continue
 		}
 
-		operation, resourceId, err := req.ParseURL()
-		handleStockOperation(operation, resourceId, conn, app)
+		operation, resourceId, extraParams, err := req.ParseURL()
+		handleOperationStock(operation, resourceId, extraParams, conn, app)
 	}
 }
 
-func handleStockOperation(operation core.Operation, resourceId string, conn net.Conn, app *core.App) {
+func handleOperationStock(operation core.Operation, resourceId string, extraParams []string, conn net.Conn, app *core.App) {
 
 	app.MutexForStocks.Lock()
 	defer app.MutexForStocks.Unlock()
@@ -54,5 +55,11 @@ func handleStockOperation(operation core.Operation, resourceId string, conn net.
 
 	} else if operation == core.OpReleaseStock {
 
+	} else if operation == core.OpCreateStock {
+
+		quantity, _ := strconv.ParseInt(extraParams[0], 10, 64)
+		app.CreateStock(resourceId, quantity)
+
+		ReleaseClientHttp(conn, message.GenerateCreateStockResponse(resourceId, extraParams[0]))
 	}
 }

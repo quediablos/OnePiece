@@ -42,25 +42,32 @@ func ReadHTTPRequest(conn net.Conn) (*ParsedRequest, error) {
 	}, nil
 }
 
-func (r *ParsedRequest) ParseURL() (core.Operation, string, error) {
-	// Trim leading slash and split: ["lock", "42"]
+func (r *ParsedRequest) ParseURL() (core.Operation, string, []string, error) {
+
 	segments := strings.Split(strings.TrimPrefix(r.Path, "/"), "/")
-	if len(segments) != 2 || segments[0] == "" || segments[1] == "" {
-		return "", "", fmt.Errorf("invalid path %q: expected /<operation>/<resource_id>", r.Path)
+	if segments[0] == "" || segments[1] == "" {
+		return "", "", nil, fmt.Errorf("invalid path %q: expected /<operation>/<resource_id>", r.Path)
 	}
 
+	var extraParams []string
+
 	op := core.Operation(segments[0])
+
 	switch op {
 	case core.OpLock:
 	case core.OpUnlock:
 	case core.OpReserveStock:
 	case core.OpReleaseStock:
-		// valid
+		break
+	case core.OpCreateStock:
+		extraParams = append(extraParams, segments[2])
+		break
+
 	default:
-		return "", "", fmt.Errorf("unknown operation %q", segments[0])
+		return "", "", nil, fmt.Errorf("unknown operation %q", segments[0])
 	}
 
-	return op, segments[1], nil
+	return op, segments[1], extraParams, nil
 }
 
 // ReleaseClientHttp Writes a response to the client and releases its hold.

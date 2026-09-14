@@ -13,6 +13,8 @@ type StockReserve struct {
 	Id         string
 }
 
+// ReserveStock
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
 func (app *App) ReserveStock(resourceId string) (*StockReserve, bool) {
 
 	if app.StockCounts[resourceId] == 0 {
@@ -37,6 +39,12 @@ func (app *App) ReserveStock(resourceId string) (*StockReserve, bool) {
 
 		return stockReserve, true
 	}
+}
+
+// CreateStock
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func (app *App) CreateStock(resourceId string, quantity int64) {
+	app.StockCounts[resourceId] += quantity
 }
 
 /*func (app *App) ReleaseStock(resourceId string) bool {
