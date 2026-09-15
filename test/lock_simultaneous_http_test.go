@@ -68,7 +68,7 @@ func TestLockExpiryMechanism(t *testing.T) {
 
 	sum = 0
 
-	for id := 0; id < 3; id++ {
+	for id := range 3 {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
