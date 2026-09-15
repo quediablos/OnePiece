@@ -21,6 +21,8 @@ func (app *App) ReserveStock(resourceId string) (*StockReserve, bool) {
 		return nil, false
 	} else {
 
+		app.StockCounts[resourceId]--
+
 		now := time.Now()
 		id, _ := GenerateUUID()
 
