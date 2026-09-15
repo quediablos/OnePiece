@@ -19,6 +19,10 @@ func main() {
 	go network.ProcessStocks(app)
 
 	//Listener
-	network.ListenHttp(app)
+	if app.Config.ListenHttp {
+		network.ListenHttp(app)
+	} else {
+		network.ListenTcp(app)
+	}
 
 }

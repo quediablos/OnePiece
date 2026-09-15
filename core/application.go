@@ -27,6 +27,13 @@ type App struct {
 	//Thread communication
 	ChanLocks  chan OperationData
 	ChanStocks chan OperationData
+
+	//Config
+	Config Config
+}
+
+type Config struct {
+	ListenHttp bool
 }
 
 func NewApp() *App {
@@ -37,6 +44,7 @@ func NewApp() *App {
 		StockReserves: make(map[string][]StockReserve),
 		ChanLocks:     make(chan OperationData, 100),
 		ChanStocks:    make(chan OperationData, 100),
+		Config:        Config{ListenHttp: false},
 	}
 }
 
