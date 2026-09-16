@@ -20,7 +20,7 @@ func ProcessLocks(app *core.App) {
 			} else {
 				// No active lock — acquire it and respond immediately.
 				core.AcquireLock(data.ResourceId, app)
-				ReleaseClientHttp(data.Conn, message.GenerateAcquireLockResponse(data.ResourceId))
+				ReleaseClient(data.Conn, message.GenerateAcquireLockResponse(app, data.ResourceId))
 			}
 
 		} else if data.Operation == core.OpUnlock {
@@ -28,9 +28,9 @@ func ProcessLocks(app *core.App) {
 			waitingOne := core.ReleaseLock(data.ResourceId, app)
 
 			if waitingOne != nil {
-				ReleaseClientHttp(waitingOne, message.GenerateAcquireLockResponse(data.ResourceId))
+				ReleaseClient(waitingOne, message.GenerateAcquireLockResponse(app, data.ResourceId))
 			}
-			ReleaseClientHttp(data.Conn, message.GenerateReleaseLockResponse(data.ResourceId))
+			ReleaseClient(data.Conn, message.GenerateReleaseLockResponse(app, data.ResourceId))
 		}
 
 		app.MutexForLocks.Unlock()

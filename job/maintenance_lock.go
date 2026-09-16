@@ -26,6 +26,6 @@ func MaintainExpiredLocks(app *core.App) {
 
 	for _, req := range waitingLockRequests {
 		core.AcquireLock(req.ResourceId, app)
-		network.ReleaseClientHttp(req.RequestedBy, message.GenerateAcquireLockResponse(req.ResourceId))
+		network.ReleaseClient(req.RequestedBy, message.GenerateAcquireLockResponse(app, req.ResourceId))
 	}
 }
