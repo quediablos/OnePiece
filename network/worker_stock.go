@@ -16,19 +16,19 @@ func ProcessStocks(app *core.App) {
 			stockReserve, success := app.ReserveStock(data.ResourceId)
 
 			if success {
-				ReleaseClientHttp(data.Conn, message.GenerateReserveStockSuccessfulResponse(stockReserve.Id, data.ResourceId))
+				ReleaseClient(data.Conn, message.GenerateReserveStockSuccessfulResponse(app, stockReserve.Id, data.ResourceId))
 			} else {
-				ReleaseClientHttp(data.Conn, message.GenerateReserveStockFailedResponse(data.ResourceId))
+				ReleaseClient(data.Conn, message.GenerateReserveStockFailedResponse(app, data.ResourceId))
 			}
 
 		} else if data.Operation == core.OpReleaseStock {
-
+			//TODO:implement
 		} else if data.Operation == core.OpCreateStock {
 
 			quantity, _ := strconv.ParseInt(data.ExtraParams[0], 10, 64)
 			app.CreateStock(data.ResourceId, quantity)
 
-			ReleaseClientHttp(data.Conn, message.GenerateCreateStockResponse(data.ResourceId, data.ExtraParams[0]))
+			ReleaseClient(data.Conn, message.GenerateCreateStockResponse(app, data.ResourceId, data.ExtraParams[0]))
 		}
 
 		app.MutexForStocks.Unlock()

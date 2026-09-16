@@ -41,7 +41,7 @@ func ListenHttp(app *core.App) {
 		}
 
 		if err != nil {
-			ReleaseClientHttp(conn, message.GenerateGenericErrorResponse())
+			ReleaseClient(conn, message.GenerateGenericErrorHttpResponse())
 		}
 
 		if operation == core.OpLock ||
