@@ -13,6 +13,19 @@ type StockReserve struct {
 	Id         string
 }
 
+// CreateStock
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func (app *App) CreateStock(resourceId string, quantity int64) bool {
+
+	if app.StockCounts[resourceId] == 0 {
+		app.StockReserves[resourceId] = []StockReserve{}
+		app.StockCounts[resourceId] = quantity
+		return true
+	} else {
+		return false
+	}
+}
+
 // ReserveStock
 // ------------- THREAD-SAFE: This method needs to run thread-safe -------------
 func (app *App) ReserveStock(resourceId string) (*StockReserve, bool) {
@@ -33,25 +46,35 @@ func (app *App) ReserveStock(resourceId string) (*StockReserve, bool) {
 			Id:         id,
 		}
 
-		if app.StockReserves[resourceId] == nil {
-			app.StockReserves[resourceId] = []StockReserve{}
-		}
-
 		app.StockReserves[resourceId] = append(app.StockReserves[resourceId], *stockReserve)
 
 		return stockReserve, true
 	}
 }
 
-// CreateStock
+// ReleaseStock
 // ------------- THREAD-SAFE: This method needs to run thread-safe -------------
-func (app *App) CreateStock(resourceId string, quantity int64) {
-	app.StockCounts[resourceId] += quantity
+func (app *App) ReleaseStock(resourceId string, id string) {
+
+	//Find the stock reserve with the given id.
+	if app.StockReserves[resourceId] != nil {
+		foundIdx := -1
+		for i, reserve := range app.StockReserves[resourceId] {
+			if reserve.Id == id {
+				foundIdx = i
+				break
+			}
+		}
+		if foundIdx != -1 {
+			app.StockReserves[resourceId] = append(
+				app.StockReserves[resourceId][:foundIdx],
+				app.StockReserves[resourceId][foundIdx+1:]...,
+			)
+
+			app.StockCounts[resourceId]++
+		}
+	}
 }
-
-/*func (app *App) ReleaseStock(resourceId string) bool {
-
-}*/
 
 func GenerateUUID() (string, error) {
 	b := make([]byte, 16)

@@ -51,9 +51,32 @@ func GenerateReserveStockFailedHttpResponse(resourceId string) string {
 	return response
 }
 
-func GenerateCreateStockHttpResponse(resourceId string, quantity string) string {
+func GenerateCreateStockFailedHttpResponse(resourceId string) string {
+	body := "Already created stock for resourceId: " + resourceId
+	response := "HTTP/1.1 204 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}
+
+func GenerateCreateStockSuccessfulHttpResponse(resourceId string, quantity string) string {
 
 	body := "Created stock for resourceId: " + resourceId + " quantity:" + quantity
+	response := "HTTP/1.1 204 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}
+
+func GenerateReleaseStockSuccessfulHttpResponse(resourceId string) string {
+
+	body := "Released stock for resourceId: " + resourceId
 	response := "HTTP/1.1 204 OK\r\n" +
 		"Content-Type: text/plain\r\n" +
 		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +

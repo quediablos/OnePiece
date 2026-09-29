@@ -30,11 +30,26 @@ func GenerateReserveStockFailedResponse(app *core.App, resourceId string) string
 	return GenerateReserveStockFailedTcpResponse(resourceId)
 }
 
-func GenerateCreateStockResponse(app *core.App, resourceId string, quantity string) string {
+func GenerateCreateStockSuccessfulResponse(app *core.App, resourceId string, quantity string) string {
 	if app.Config.ListenHttp {
-		return GenerateCreateStockHttpResponse(resourceId, quantity)
+		return GenerateCreateStockSuccessfulHttpResponse(resourceId, quantity)
 	}
-	return GenerateCreateStockTcpResponse(resourceId, quantity)
+	return GenerateCreateStockSuccessfulTcpResponse(resourceId, quantity)
+}
+
+func GenerateReleaseStockSuccessfulResponse(app *core.App, resourceId string) string {
+	if app.Config.ListenHttp {
+		return GenerateReleaseStockSuccessfulHttpResponse(resourceId)
+	} else {
+		return GenerateReleaseStockSuccessfulTcpResponse(resourceId)
+	}
+}
+
+func GenerateCreateStockFailedResponse(app *core.App, resourceId string) string {
+	if app.Config.ListenHttp {
+		return GenerateCreateStockFailedHttpResponse(resourceId)
+	}
+	return GenerateCreateStockFailedTcpResponse(resourceId)
 }
 
 func GenerateGenericErrorResponse(app *core.App) string {

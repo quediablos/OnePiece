@@ -32,9 +32,18 @@ func GenerateReserveStockFailedTcpResponse(resourceId string) string {
 	return fmt.Sprintf("%s|RES|FAILED|RESERVE_STOCK|%s\n", tcpFrameVersion, resourceId)
 }
 
-func GenerateCreateStockTcpResponse(resourceId string, quantity string) string {
+func GenerateCreateStockSuccessfulTcpResponse(resourceId string, quantity string) string {
 	// 1|RES|SUCCESSFUL|CREATE_STOCK|<resourceId>|<quantity>
 	return fmt.Sprintf("%s|RES|SUCCESSFUL|CREATE_STOCK|%s|%s\n", tcpFrameVersion, resourceId, quantity)
+}
+
+func GenerateCreateStockFailedTcpResponse(resourceId string) string {
+	return fmt.Sprintf("%s|RES|FAILED|CREATE_STOCK|%s|STOCK_ALREADY_CREATED|Stock already created.\n",
+		tcpFrameVersion, resourceId)
+}
+
+func GenerateReleaseStockSuccessfulTcpResponse(resourceId string) string {
+	return fmt.Sprintf("%s|RES|SUCCESSFUL|RELEASE_STOCK|%s\n", tcpFrameVersion, resourceId)
 }
 
 // Error responses
