@@ -40,3 +40,23 @@
 
          <version>|<messageType>|<status>|UNLOCK|<resourceId>|<errorCode>|<errorMessage>
          1|RES|FAILED|UNLOCK|234324234|RESOURCE_NOT_FOUND|Resource [234324234] not found.
+
+
+3. Create Stock
+
+   3.1. Request
+
+         <version>|<messageType>|CREATE_STOCK|<resourceId>|<quantity>
+         1|REQ|CREATE_STOCK|12122|100
+
+   3.2. Response
+
+   Successful
+
+         <version>|<messageType>|<status>|CREATE_STOCK|<reserveId>
+         <1>|RES|SUCCESS|CREATE_STOCK|5ffe3244-343gf-23232-grg333
+
+   Failed
+
+         <version>|<messageType>|<status>|CREATE_STOCK|<resourceId>|<errorCode>|<errorMessage>
+         1|RES|FAILED|CREATE_STOCK|232323|STOCK_ALREADY_CREATED|Stock is already created.

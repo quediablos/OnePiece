@@ -22,13 +22,25 @@ func ProcessStocks(app *core.App) {
 			}
 
 		} else if data.Operation == core.OpReleaseStock {
-			//TODO:implement
+
+			app.ReleaseStock(data.ResourceId, data.ExtraParams[0])
+			msg := message.GenerateReleaseStockSuccessfulResponse(app, data.ResourceId)
+			ReleaseClient(data.Conn, msg)
+
 		} else if data.Operation == core.OpCreateStock {
 
 			quantity, _ := strconv.ParseInt(data.ExtraParams[0], 10, 64)
-			app.CreateStock(data.ResourceId, quantity)
 
-			ReleaseClient(data.Conn, message.GenerateCreateStockResponse(app, data.ResourceId, data.ExtraParams[0]))
+			success := app.CreateStock(data.ResourceId, quantity)
+
+			var msg string
+			if success {
+				msg = message.GenerateCreateStockSuccessfulResponse(app, data.ResourceId, data.ExtraParams[0])
+			} else {
+				msg = message.GenerateCreateStockFailedResponse(app, data.ResourceId)
+			}
+
+			ReleaseClient(data.Conn, msg)
 		}
 
 		app.MutexForStocks.Unlock()

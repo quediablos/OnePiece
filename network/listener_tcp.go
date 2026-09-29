@@ -81,6 +81,12 @@ func parseTcpInputV1(conn net.Conn, input string) (core.OperationData, error) {
 		op = core.OpLock
 	case "UNLOCK":
 		op = core.OpUnlock
+	case "CREATE_STOCK":
+		op = core.OpCreateStock
+	case "RESERVE_STOCK":
+		op = core.OpReserveStock
+	case "RELEASE_STOCK":
+		op = core.OpReleaseStock
 	default:
 		return core.OperationData{}, fmt.Errorf("unknown operation: %q", opRaw)
 	}
