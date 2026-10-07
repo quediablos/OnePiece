@@ -8,11 +8,13 @@ import (
 type Operation string
 
 const (
-	OpLock         Operation = "lock"
-	OpUnlock       Operation = "unlock"
-	OpReserveStock Operation = "reserve_stock"
-	OpReleaseStock Operation = "release_stock"
-	OpCreateStock  Operation = "create_stock"
+	OpLock               Operation = "lock"
+	OpUnlock             Operation = "unlock"
+	OpReserveStock       Operation = "reserve_stock"
+	OpReleaseStock       Operation = "release_stock"
+	OpCreateStock        Operation = "create_stock"
+	OpSetupRateLimiter   Operation = "setup_rl"
+	OpWaitForRateLimiter Operation = "wait_rl"
 )
 
 type OperationData struct {

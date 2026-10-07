@@ -63,6 +63,15 @@ func (r *ParsedRequest) ParseURL() (core.Operation, string, []string, error) {
 		extraParams = append(extraParams, segments[2])
 		break
 
+	case core.OpSetupRateLimiter:
+		extraParams = append(extraParams, segments[2]) //userId
+		extraParams = append(extraParams, segments[3]) //timeFrame
+		extraParams = append(extraParams, segments[4]) //rate
+		break
+	case core.OpWaitForRateLimiter:
+		extraParams = append(extraParams, segments[2]) //userId
+		break
+
 	default:
 		return "", "", nil, fmt.Errorf("unknown operation %q", segments[0])
 	}

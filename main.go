@@ -17,6 +17,7 @@ func main() {
 	//Workers
 	go network.ProcessLocks(app)
 	go network.ProcessStocks(app)
+	go network.ProcessRl(app)
 
 	//Listener
 	if app.Config.ListenHttp {

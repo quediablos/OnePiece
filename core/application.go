@@ -20,13 +20,18 @@ type App struct {
 	StockCounts   map[string]int64          //Represents the stock count for each resource.
 	StockReserves map[string][]StockReserve //Stores the stock reserves for each stock.
 
+	//Rate limiter
+	RateLimiters map[string]*RateLimiter //Key is resourceId:userId
+
 	//Thread-safe
 	MutexForLocks  sync.RWMutex
 	MutexForStocks sync.RWMutex
+	MutexForRl     sync.RWMutex
 
 	//Thread communication
 	ChanLocks  chan OperationData
 	ChanStocks chan OperationData
+	ChanRl     chan OperationData
 
 	//Config
 	Config Config
@@ -42,9 +47,11 @@ func NewApp() *App {
 		LockRequests:  make(map[string][]LockRequest),
 		StockCounts:   make(map[string]int64),
 		StockReserves: make(map[string][]StockReserve),
+		RateLimiters:  make(map[string]*RateLimiter),
 		ChanLocks:     make(chan OperationData, 100),
 		ChanStocks:    make(chan OperationData, 100),
-		Config:        Config{ListenHttp: false},
+		ChanRl:        make(chan OperationData, 100),
+		Config:        Config{ListenHttp: true},
 	}
 }
 
