@@ -3,21 +3,26 @@ package core
 import "time"
 
 type RateLimiter struct {
-	TokenCount float64
-	Rate       int32
-	TimeFrame  int64
-	LastUsage  *time.Time
-	Queue      []OperationData // Waiting clients when no tokens are available (FIFO)
+	TokenCount     float64
+	Rate           int32
+	TimeFrame      int64
+	LastUsage      *time.Time
+	WaitingClients []OperationData
 }
 
-// CheckRlAvailability Checks if there is availability in the rate. If there is availability, one token is used.
+// CheckAndMaintainRlAvailability Checks if there is availability in the rate. If there is availability, one token is used.
 // ------------- THREAD-SAFE: This method needs to run thread-safe -------------
-func CheckRlAvailability(app *App, key string) (bool, *Error) {
+//
+// Returns:
+//   - bool: tokenAvailable — true if a token was available and consumed, false otherwise.
+//   - bool: queued        — true if the client was added to WaitingClients (only possible when holdOption is true and no token was available).
+//   - *Error: err         — non-nil if a fatal error occurred (e.g. rate limiter not found); nil on normal operation.
+func CheckAndMaintainRlAvailability(app *App, key string, operationData OperationData, holdOption bool) (bool, bool, *Error) {
 
 	rateLimiter := app.RateLimiters[key]
 
 	if rateLimiter == nil {
-		return false, &Error{
+		return false, false, &Error{
 			ErrorCode:    "RATE_LIMITER_NOT_FOUND",
 			ErrorMessage: "Rate limiter not found.",
 		}
@@ -40,11 +45,14 @@ func CheckRlAvailability(app *App, key string) (bool, *Error) {
 	rateLimiter.LastUsage = &now
 
 	if rateLimiter.TokenCount < 1 {
-		return false, nil
+		if holdOption {
+			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients, operationData)
+		}
+		return false, holdOption, nil
 	}
 
 	rateLimiter.TokenCount--
-	return true, nil
+	return true, false, nil
 
 }
 

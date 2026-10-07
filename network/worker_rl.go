@@ -42,8 +42,10 @@ func ProcessRl(app *core.App) {
 
 		} else if data.Operation == core.OpWaitForRateLimiter {
 
+			holdOption, _ := strconv.ParseBool(data.ExtraParams[1])
+
 			key := core.MakeRlKey(data.ResourceId, userId)
-			rlAvailable, err := core.CheckRlAvailability(app, key)
+			rlAvailable, queued, err := core.CheckAndMaintainRlAvailability(app, key, data, holdOption)
 
 			if err != nil {
 				ReleaseClient(data.Conn, message.GenerateWaitRlFailedResponse(app, err.ErrorCode, err.ErrorMessage))
@@ -52,8 +54,12 @@ func ProcessRl(app *core.App) {
 			if rlAvailable {
 				ReleaseClient(data.Conn, message.GenerateWaitRlSuccessfulResponse(app))
 			} else {
-				ReleaseClient(data.Conn, message.GenerateWaitRlFailedResponse(app, "LIMIT_EXCEEDED",
-					"Rate limiter exceeded."))
+
+				if !queued {
+					ReleaseClient(data.Conn, message.GenerateWaitRlFailedResponse(app, "LIMIT_EXCEEDED",
+						"Rate limiter exceeded."))
+				}
+
 			}
 		}
 
