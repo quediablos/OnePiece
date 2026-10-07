@@ -17,7 +17,7 @@ func ProcessRl(app *core.App) {
 
 		if data.Operation == core.OpSetupRateLimiter {
 
-			key := makeKey(data.ResourceId, userId)
+			key := core.MakeRlKey(data.ResourceId, userId)
 
 			timeFrame := data.ExtraParams[1]
 			rate := data.ExtraParams[2]
@@ -42,8 +42,12 @@ func ProcessRl(app *core.App) {
 
 		} else if data.Operation == core.OpWaitForRateLimiter {
 
-			key := makeKey(data.ResourceId, userId)
-			rlAvailable := core.CheckRlAvailability(app.RateLimiters[key])
+			key := core.MakeRlKey(data.ResourceId, userId)
+			rlAvailable, err := core.CheckRlAvailability(app, key)
+
+			if err != nil {
+				ReleaseClient(data.Conn, message.GenerateWaitRlFailedResponse(app, err.ErrorCode, err.ErrorMessage))
+			}
 
 			if rlAvailable {
 				ReleaseClient(data.Conn, message.GenerateWaitRlSuccessfulResponse(app))
@@ -55,8 +59,4 @@ func ProcessRl(app *core.App) {
 
 		app.MutexForRl.Unlock()
 	}
-}
-
-func makeKey(resourceId string, userId string) string {
-	return resourceId + ":" + userId
 }

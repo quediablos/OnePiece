@@ -7,13 +7,21 @@ type RateLimiter struct {
 	Rate       int32
 	TimeFrame  int64
 	LastUsage  *time.Time
+	Queue      []OperationData // Waiting clients when no tokens are available (FIFO)
 }
 
 // CheckRlAvailability Checks if there is availability in the rate. If there is availability, one token is used.
 // ------------- THREAD-SAFE: This method needs to run thread-safe -------------
-func CheckRlAvailability(rateLimiter *RateLimiter) bool {
+func CheckRlAvailability(app *App, key string) (bool, *Error) {
 
-	//TODO:check if rate limiter exists
+	rateLimiter := app.RateLimiters[key]
+
+	if rateLimiter == nil {
+		return false, &Error{
+			ErrorCode:    "RATE_LIMITER_NOT_FOUND",
+			ErrorMessage: "Rate limiter not found.",
+		}
+	}
 
 	//First add the tokens that the bucket gained during cooldown.
 	tokensToAddPerSecond := float64(rateLimiter.Rate) / (float64(rateLimiter.TimeFrame) / 1_000_000_000)
@@ -32,10 +40,14 @@ func CheckRlAvailability(rateLimiter *RateLimiter) bool {
 	rateLimiter.LastUsage = &now
 
 	if rateLimiter.TokenCount < 1 {
-		return false
+		return false, nil
 	}
 
 	rateLimiter.TokenCount--
-	return true
+	return true, nil
 
+}
+
+func MakeRlKey(resourceId string, userId string) string {
+	return resourceId + ":" + userId
 }
