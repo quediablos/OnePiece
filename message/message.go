@@ -52,6 +52,27 @@ func GenerateCreateStockFailedResponse(app *core.App, resourceId string) string 
 	return GenerateCreateStockFailedTcpResponse(resourceId)
 }
 
+func GenerateWaitRlSuccessfulResponse(app *core.App) string {
+	if app.Config.ListenHttp {
+		return GenerateWaitRlSuccessfulHttpResponse()
+	}
+	return GenerateWaitRlSuccessfulTcpResponse()
+}
+
+func GenerateWaitRlFailedResponse(app *core.App, errorCode string, errorMessage string) string {
+	if app.Config.ListenHttp {
+		return GenerateWaitRlFailedHttpResponse(errorCode, errorMessage)
+	}
+	return GenerateWaitRlFailedTcpResponse(errorCode, errorMessage)
+}
+
+func GenerateSetupRlSuccessfulResponse(app *core.App) string {
+	if app.Config.ListenHttp {
+		return GenerateSetupRlSuccessfulHttpResponse()
+	}
+	return GenerateSetupRlSuccessfulTcpResponse()
+}
+
 func GenerateGenericErrorResponse(app *core.App) string {
 	if app.Config.ListenHttp {
 		return GenerateGenericErrorHttpResponse()

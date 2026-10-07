@@ -53,6 +53,10 @@ func ListenHttp(app *core.App) {
 			operation == core.OpCreateStock {
 
 			app.ChanStocks <- operationData
+		} else if operation == core.OpSetupRateLimiter ||
+			operation == core.OpWaitForRateLimiter {
+
+			app.ChanRl <- operationData
 		}
 	}
 }

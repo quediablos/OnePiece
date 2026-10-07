@@ -86,6 +86,39 @@ func GenerateReleaseStockSuccessfulHttpResponse(resourceId string) string {
 	return response
 }
 
+func GenerateWaitRlSuccessfulHttpResponse() string {
+	body := "Rate limiter passed"
+	response := "HTTP/1.1 200 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}
+
+func GenerateWaitRlFailedHttpResponse(errorCode string, errorMessage string) string {
+	body := "Rate limiter rejected: errorCode: " + errorCode + ", errorMessage: " + errorMessage
+	response := "HTTP/1.1 429 Too Many Requests\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}
+
+func GenerateSetupRlSuccessfulHttpResponse() string {
+	body := "Rate limiter setup successful."
+	response := "HTTP/1.1 200 OK\r\n" +
+		"Content-Type: text/plain\r\n" +
+		fmt.Sprintf("Content-Length: %s\r\n", strconv.Itoa(len(body))) +
+		"\r\n" +
+		body
+
+	return response
+}
+
 func GenerateGenericErrorHttpResponse() string {
 	body := "Error"
 	response := "HTTP/1.1 204 OK\r\n" +

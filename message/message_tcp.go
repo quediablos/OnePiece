@@ -46,6 +46,18 @@ func GenerateReleaseStockSuccessfulTcpResponse(resourceId string) string {
 	return fmt.Sprintf("%s|RES|SUCCESSFUL|RELEASE_STOCK|%s\n", tcpFrameVersion, resourceId)
 }
 
+func GenerateWaitRlSuccessfulTcpResponse() string {
+	return fmt.Sprintf("%s|RES|SUCCESSFUL|RL_WAIT|%s\n", tcpFrameVersion, false)
+}
+
+func GenerateWaitRlFailedTcpResponse(errorCode string, errorMessage string) string {
+	return fmt.Sprintf("%s|RES|FAILED|RL_WAIT|%s|%s\n", tcpFrameVersion, errorCode, errorMessage)
+}
+
+func GenerateSetupRlSuccessfulTcpResponse() string {
+	return fmt.Sprintf("%s|RES|SUCCESS|RL_SETUP\n", tcpFrameVersion)
+}
+
 // Error responses
 
 func GenerateGenericErrorTcpResponse() string {

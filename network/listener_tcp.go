@@ -57,9 +57,11 @@ func ListenTcp(app *core.App) {
 			operationData.Operation == core.OpReleaseStock {
 
 			app.ChanStocks <- operationData
+		} else if operationData.Operation == core.OpSetupRateLimiter ||
+			operationData.Operation == core.OpWaitForRateLimiter {
+			app.ChanRl <- operationData
 		}
 	}
-
 }
 
 // parseTcpInputV1 parses the raw tcp input to return operation data.
@@ -87,6 +89,10 @@ func parseTcpInputV1(conn net.Conn, input string) (core.OperationData, error) {
 		op = core.OpReserveStock
 	case "RELEASE_STOCK":
 		op = core.OpReleaseStock
+	case "RL_SETUP":
+		op = core.OpSetupRateLimiter
+	case "RL_WAIT":
+		op = core.OpWaitForRateLimiter
 	default:
 		return core.OperationData{}, fmt.Errorf("unknown operation: %q", opRaw)
 	}
