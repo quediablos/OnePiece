@@ -70,6 +70,7 @@ func (r *ParsedRequest) ParseURL() (core.Operation, string, []string, error) {
 		break
 	case core.OpWaitForRateLimiter:
 		extraParams = append(extraParams, segments[2]) //userId
+		extraParams = append(extraParams, segments[3]) //hold option
 		break
 
 	default:
