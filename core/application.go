@@ -1,6 +1,7 @@
 package core
 
 import (
+	"container/heap"
 	"sync"
 	"time"
 )
@@ -21,7 +22,8 @@ type App struct {
 	StockReserves map[string][]StockReserve //Stores the stock reserves for each stock.
 
 	//Rate limiter
-	RateLimiters map[string]*RateLimiter //Key is resourceId:userId
+	RateLimiters      map[string]*RateLimiter //Key is resourceId:userId
+	WaitingClientsAll ClientQueue             //Waiting clients queue based on their priority.
 
 	//Thread-safe
 	MutexForLocks  sync.RWMutex
@@ -42,17 +44,24 @@ type Config struct {
 }
 
 func NewApp() *App {
-	return &App{
-		Locks:         make(map[string]LockInfo),
-		LockRequests:  make(map[string][]LockRequest),
+	app := &App{
+		Locks:        make(map[string]LockInfo),
+		LockRequests: make(map[string][]LockRequest),
+
 		StockCounts:   make(map[string]int64),
 		StockReserves: make(map[string][]StockReserve),
-		RateLimiters:  make(map[string]*RateLimiter),
-		ChanLocks:     make(chan OperationData, 100),
-		ChanStocks:    make(chan OperationData, 100),
-		ChanRl:        make(chan OperationData, 100),
-		Config:        Config{ListenHttp: true},
+
+		RateLimiters: make(map[string]*RateLimiter),
+
+		ChanLocks:  make(chan OperationData, 100),
+		ChanStocks: make(chan OperationData, 100),
+		ChanRl:     make(chan OperationData, 100),
+		Config:     Config{ListenHttp: true},
 	}
+
+	heap.Init(&app.WaitingClientsAll)
+
+	return app
 }
 
 func (app *App) IncrementCycle() int32 {
