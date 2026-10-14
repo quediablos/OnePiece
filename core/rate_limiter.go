@@ -29,17 +29,7 @@ func CheckAndMaintainRlAvailability(app *App, key string, operationData Operatio
 	}
 
 	//First add the tokens that the bucket gained during cooldown.
-	tokensToAddPerSecond := rateLimiter.TokensToAddPerSecond()
-
-	if rateLimiter.LastUsage != nil {
-		elapsed := time.Since(*rateLimiter.LastUsage)
-		tokensToAdd := tokensToAddPerSecond * elapsed.Seconds()
-		rateLimiter.TokenCount += tokensToAdd
-		// Cap at max bucket capacity (Rate tokens per TimeFrame)
-		if maxTokens := float64(rateLimiter.Rate); rateLimiter.TokenCount > maxTokens {
-			rateLimiter.TokenCount = maxTokens
-		}
-	}
+	rateLimiter.TokenCount = rateLimiter.CalculateAccumulation()
 
 	now := time.Now()
 	rateLimiter.LastUsage = &now
@@ -48,8 +38,9 @@ func CheckAndMaintainRlAvailability(app *App, key string, operationData Operatio
 		if enqueue {
 			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients, operationData)
 
-			prioritizedClient := PrioritizedClient{
+			prioritizedClient := WaitingClient{
 				OperationData: operationData,
+				Key:           key,
 				Priority:      rateLimiter.CalculateProximity(),
 			}
 			app.WaitingClientsAll.Push(prioritizedClient)
@@ -57,10 +48,25 @@ func CheckAndMaintainRlAvailability(app *App, key string, operationData Operatio
 		return false, enqueue, nil
 	}
 
+	//Token available
 	rateLimiter.TokenCount--
+
+	// Remove operationData from WaitingClients using Conn as the unique identifier.
+	for i, wc := range rateLimiter.WaitingClients {
+		if wc.Conn == operationData.Conn {
+			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients[:i], rateLimiter.WaitingClients[i+1:]...)
+			break
+		}
+	}
+
 	return true, false, nil
 
 }
+
+// IsTimeForClient decides if the client can be released because there
+/*func IsTimeForClient(app *App, key string, operationData OperationData) bool {
+
+}*/
 
 func MakeRlKey(resourceId string, userId string) string {
 	return resourceId + ":" + userId
@@ -92,4 +98,23 @@ func (rl *RateLimiter) HowLongUntilNextAllocation() float64 {
 	tokensToAddPerSecond := rl.TokensToAddPerSecond()
 	currentTokens := rl.TokenCount
 	return (1 - currentTokens) / tokensToAddPerSecond
+}
+
+// CalculateAccumulation calculates how many tokens have accumulated until the moment of call.
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func (rl *RateLimiter) CalculateAccumulation() float64 {
+
+	tokensToAddPerSecond := rl.TokensToAddPerSecond()
+	var tokenAccumulation = rl.TokenCount
+
+	elapsed := time.Since(*rl.LastUsage)
+	tokensToAdd := tokensToAddPerSecond * elapsed.Seconds()
+	tokenAccumulation += tokensToAdd
+	// Cap at max bucket capacity (Rate tokens per TimeFrame)
+	if maxTokens := float64(rl.Rate); rl.TokenCount > maxTokens {
+		tokenAccumulation = maxTokens
+	}
+
+	return tokenAccumulation
+
 }

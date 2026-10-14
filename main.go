@@ -13,6 +13,7 @@ func main() {
 
 	//Maintenance jobs
 	go job.Maintain(app)
+	go job.MaintainRateLimiter(app)
 
 	//Workers
 	go network.ProcessLocks(app)
