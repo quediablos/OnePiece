@@ -23,19 +23,22 @@ func HandleQueuedClients(app *core.App) {
 	app.MutexForRl.Lock()
 	defer app.MutexForRl.Unlock()
 
-	fmt.Printf("[RateLimiter] Waiting clients (%d):\n", app.WaitingClientsAll.Len())
-	for i := 0; app.WaitingClientsAll.Len() > 0; i++ {
+	var notReleased []core.EnqueuedClient
 
-		client := heap.Pop(&app.WaitingClientsAll).(core.WaitingClient)
+	for app.EnqueuedClientsAll.Len() > 0 {
 
-		released, _, _ := core.CheckAndMaintainRlAvailability(app, client.Key, client.OperationData, true)
+		client := heap.Pop(&app.EnqueuedClientsAll).(core.EnqueuedClient)
+		released, _ := core.CheckAndMaintainRlAvailabilityForEnqueuedClient(app, client.Key, client)
 
 		if released {
-			fmt.Printf("[RateLimiter] Client (%d) is now released.\n", client.Key)
+			fmt.Printf("[RateLimiter] Client (key:%s priority:%f) is now released.\n", client.Key, client.Priority)
 			network.ReleaseClient(client.OperationData.Conn, message.GenerateWaitRlSuccessfulResponse(app))
 		} else {
-			fmt.Printf("[RateLimiter] Client (%d) keeps waiting.\n", client.Key)
+			notReleased = append(notReleased, client)
 		}
+	}
 
+	for _, client := range notReleased {
+		heap.Push(&app.EnqueuedClientsAll, client)
 	}
 }

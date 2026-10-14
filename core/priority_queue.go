@@ -1,19 +1,19 @@
 package core
 
-type WaitingClient struct {
+type EnqueuedClient struct {
 	OperationData OperationData
 	Key           string
 	Priority      float64 // lower value = higher priority (min-heap)
 }
 
-type ClientQueue []WaitingClient
+type ClientQueue []EnqueuedClient
 
 func (q ClientQueue) Len() int           { return len(q) }
 func (q ClientQueue) Less(i, j int) bool { return q[i].Priority < q[j].Priority } // min-heap
 func (q ClientQueue) Swap(i, j int)      { q[i], q[j] = q[j], q[i] }
 
 func (q *ClientQueue) Push(x any) {
-	*q = append(*q, x.(WaitingClient))
+	*q = append(*q, x.(EnqueuedClient))
 }
 
 func (q *ClientQueue) Pop() any {

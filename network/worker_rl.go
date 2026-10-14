@@ -56,7 +56,7 @@ func handleWaitForRateLimiter(app *core.App, data core.OperationData) {
 	enqueue, _ := strconv.ParseBool(data.ExtraParams[1])
 
 	key := core.MakeRlKey(data.ResourceId, userId)
-	rlAvailable, queued, err := core.CheckAndMaintainRlAvailability(app, key, data, enqueue)
+	rlAvailable, queued, err := core.CheckAndMaintainRlAvailabilityForNewClient(app, key, data, enqueue)
 
 	if err != nil {
 		ReleaseClient(data.Conn, message.GenerateWaitRlFailedResponse(app, err.ErrorCode, err.ErrorMessage))
