@@ -22,8 +22,8 @@ type App struct {
 	StockReserves map[string][]StockReserve //Stores the stock reserves for each stock.
 
 	//Rate limiter
-	RateLimiters      map[string]*RateLimiter //Key is resourceId:userId
-	WaitingClientsAll ClientQueue             //Waiting clients queue based on their priority.
+	RateLimiters       map[string]*RateLimiter //Key is resourceId:userId
+	EnqueuedClientsAll ClientQueue             //Waiting clients queue based on their priority.
 
 	//Thread-safe
 	MutexForLocks  sync.RWMutex
@@ -59,7 +59,7 @@ func NewApp() *App {
 		Config:     Config{ListenHttp: true},
 	}
 
-	heap.Init(&app.WaitingClientsAll)
+	heap.Init(&app.EnqueuedClientsAll)
 
 	return app
 }

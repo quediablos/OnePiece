@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type RateLimiter struct {
 	TokenCount     float64
@@ -10,36 +13,27 @@ type RateLimiter struct {
 	WaitingClients []OperationData //Map of each resourceId:userId pair. Can reach which clients are queued.
 }
 
-// CheckAndMaintainRlAvailability Checks if there is availability in the rate. If there is availability, one token is used.
+// CheckAndMaintainRlAvailabilityForNewClient Checks if there is availability in the rate for a client that comes with a call.
+// If there is availability, one token is used.
 // ------------- THREAD-SAFE: This method needs to run thread-safe -------------
 //
 // Returns:
 //   - bool: tokenAvailable — true if a token was available and consumed, false otherwise.
 //   - bool: queued        — true if the client was added to WaitingClients (only possible when holdOption is true and no token was available).
 //   - *Error: err         — non-nil if a fatal error occurred (e.g. rate limiter not found); nil on normal operation.
-func CheckAndMaintainRlAvailability(app *App, key string, operationData OperationData, enqueue bool) (bool, bool, *Error) {
+func CheckAndMaintainRlAvailabilityForNewClient(app *App, key string, operationData OperationData, enqueue bool) (bool, bool, *Error) {
 
 	rateLimiter := app.RateLimiters[key]
 
 	if rateLimiter == nil {
 		return false, false, &Error{
 			ErrorCode:    "RATE_LIMITER_NOT_FOUND",
-			ErrorMessage: "Rate limiter not found.",
+			ErrorMessage: fmt.Sprintf("Rate limiter not found with key:%s.", key),
 		}
 	}
 
 	//First add the tokens that the bucket gained during cooldown.
-	tokensToAddPerSecond := rateLimiter.TokensToAddPerSecond()
-
-	if rateLimiter.LastUsage != nil {
-		elapsed := time.Since(*rateLimiter.LastUsage)
-		tokensToAdd := tokensToAddPerSecond * elapsed.Seconds()
-		rateLimiter.TokenCount += tokensToAdd
-		// Cap at max bucket capacity (Rate tokens per TimeFrame)
-		if maxTokens := float64(rateLimiter.Rate); rateLimiter.TokenCount > maxTokens {
-			rateLimiter.TokenCount = maxTokens
-		}
-	}
+	rateLimiter.TokenCount = rateLimiter.CalculateAccumulation()
 
 	now := time.Now()
 	rateLimiter.LastUsage = &now
@@ -48,18 +42,72 @@ func CheckAndMaintainRlAvailability(app *App, key string, operationData Operatio
 		if enqueue {
 			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients, operationData)
 
-			prioritizedClient := PrioritizedClient{
+			enqueuedClient := EnqueuedClient{
 				OperationData: operationData,
+				Key:           key,
 				Priority:      rateLimiter.CalculateProximity(),
 			}
-			app.WaitingClientsAll.Push(prioritizedClient)
+			app.EnqueuedClientsAll.Push(enqueuedClient)
+
+			fmt.Printf("Enqueued for key:%s priority:%f\n", key, enqueuedClient.Priority)
 		}
 		return false, enqueue, nil
 	}
 
+	//Token available
 	rateLimiter.TokenCount--
-	return true, false, nil
 
+	// Remove operationData from WaitingClients using Conn as the unique identifier.
+	for i, wc := range rateLimiter.WaitingClients {
+		if wc.Conn == operationData.Conn {
+			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients[:i], rateLimiter.WaitingClients[i+1:]...)
+			break
+		}
+	}
+
+	return true, false, nil
+}
+
+// CheckAndMaintainRlAvailabilityForEnqueuedClient Checks if there is availability in the rate for an enqueued cliemt that is already waiting.
+// If there is availability, one token is used.
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+//
+// Returns:
+//   - bool: tokenAvailable — true if a token was available and consumed, false otherwise.
+//   - *Error: err         — non-nil if a fatal error occurred (e.g. rate limiter not found); nil on normal operation.
+func CheckAndMaintainRlAvailabilityForEnqueuedClient(app *App, key string, enqueuedClient EnqueuedClient) (bool, *Error) {
+
+	rateLimiter := app.RateLimiters[key]
+
+	if rateLimiter == nil {
+		return false, &Error{
+			ErrorCode:    "RATE_LIMITER_NOT_FOUND",
+			ErrorMessage: fmt.Sprintf("Rate limiter not found with key:%s.", key),
+		}
+	}
+
+	//First add the tokens that the bucket gained during cooldown.
+	rateLimiter.TokenCount = rateLimiter.CalculateAccumulation()
+
+	now := time.Now()
+	rateLimiter.LastUsage = &now
+
+	if rateLimiter.TokenCount < 1 {
+		return false, nil
+	}
+
+	//Token available
+	rateLimiter.TokenCount--
+
+	// Remove operationData from WaitingClients using Conn as the unique identifier.
+	for i, wc := range rateLimiter.WaitingClients {
+		if wc.Conn == enqueuedClient.OperationData.Conn {
+			rateLimiter.WaitingClients = append(rateLimiter.WaitingClients[:i], rateLimiter.WaitingClients[i+1:]...)
+			break
+		}
+	}
+
+	return true, nil
 }
 
 func MakeRlKey(resourceId string, userId string) string {
@@ -92,4 +140,23 @@ func (rl *RateLimiter) HowLongUntilNextAllocation() float64 {
 	tokensToAddPerSecond := rl.TokensToAddPerSecond()
 	currentTokens := rl.TokenCount
 	return (1 - currentTokens) / tokensToAddPerSecond
+}
+
+// CalculateAccumulation calculates how many tokens have accumulated until the moment of call.
+// ------------- THREAD-SAFE: This method needs to run thread-safe -------------
+func (rl *RateLimiter) CalculateAccumulation() float64 {
+
+	tokensToAddPerSecond := rl.TokensToAddPerSecond()
+	var tokenAccumulation = rl.TokenCount
+
+	elapsed := time.Since(*rl.LastUsage)
+	tokensToAdd := tokensToAddPerSecond * elapsed.Seconds()
+	tokenAccumulation += tokensToAdd
+	// Cap at max bucket capacity (Rate tokens per TimeFrame)
+	if maxTokens := float64(rl.Rate); rl.TokenCount > maxTokens {
+		tokenAccumulation = maxTokens
+	}
+
+	return tokenAccumulation
+
 }
